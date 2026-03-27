@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import bcrypt
 
-from models import get_categories, add_category
 from models import *
 from auth import *
 
@@ -41,7 +40,6 @@ def login():
 # BOOK (USER)
 # ========================
 @app.route("/books", methods=["GET"])
-@token_required
 def books():
     return jsonify(get_all_books())
 

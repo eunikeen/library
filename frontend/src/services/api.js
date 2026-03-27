@@ -28,3 +28,5 @@ export const returnBook = (id) =>
 export const getBorrowings = () =>
   axios.get(`${API}/borrowings`, getHeaders());
 
+export const getCategories = () =>
+  axios.get(`${API}/categories`, getHeaders());

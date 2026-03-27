@@ -1,18 +1,18 @@
 <template>
-  <div class="login-container">
-    <div class="login-box">
+  <div class="register-container">
+    <div class="register-box">
 
-      <h2>Welcome Back</h2>
-      <p class="subtitle">Login untuk melanjutkan</p>
+      <h2>Create Account</h2>
+      <p class="subtitle">Daftar untuk mulai menggunakan</p>
 
       <input v-model="form.username" placeholder="Username" />
       <input v-model="form.password" type="password" placeholder="Password" />
 
-      <button @click="submit">Login</button>
+      <button @click="submit">Register</button>
 
       <p class="switch">
-        Belum punya akun?
-        <router-link to="/register">Register</router-link>
+        Sudah punya akun?
+        <router-link to="/login">Login</router-link>
       </p>
 
     </div>
@@ -20,7 +20,7 @@
 </template>
 
 <script>
-import { login } from "../services/api";
+import { register } from "../services/api";
 
 export default {
   data() {
@@ -34,14 +34,11 @@ export default {
   methods: {
     async submit() {
       try {
-        const res = await login(this.form);
-
-        localStorage.setItem("token", res.data.token);
-        localStorage.setItem("role", res.data.role);
-
-        this.$router.push("/");
+        await register(this.form);
+        alert("Berhasil register!");
+        this.$router.push("/login");
       } catch (err) {
-        alert("Login gagal!");
+        alert("Register gagal!");
       }
     }
   }
@@ -49,7 +46,7 @@ export default {
 </script>
 
 <style>
-.login-container {
+.register-container {
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -57,7 +54,7 @@ export default {
   background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
 }
 
-.login-box {
+.register-box {
   width: 340px;
   background: white;
   padding: 30px;
@@ -66,7 +63,7 @@ export default {
   text-align: center;
 }
 
-.login-box h2 {
+.register-box h2 {
   margin-bottom: 5px;
 }
 
@@ -76,21 +73,20 @@ export default {
   margin-bottom: 20px;
 }
 
-.login-box input {
+.register-box input {
   width: 100%;
   padding: 12px;
   margin-bottom: 12px;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   outline: none;
-  transition: 0.2s;
 }
 
-.login-box input:focus {
+.register-box input:focus {
   border-color: #7f1d1d;
 }
 
-.login-box button {
+.register-box button {
   width: 100%;
   padding: 12px;
   background: #7f1d1d;
@@ -98,10 +94,9 @@ export default {
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  transition: 0.2s;
 }
 
-.login-box button:hover {
+.auth-box button:hover {
   background: #5f0f0f;
 }
 

@@ -5,9 +5,9 @@
     <p>{{ book.penerbit }}</p>
     <p>{{ book.tahun_terbit }}</p>
     <p>{{ book.deskripsi }}</p>
-    <p>Stok: {{ book.stok }}</p>
-    <p>Kategori ID: {{ book.kategori_id }}</p>
-    <p>Cover URL: {{ book.cover_url }}</p>
+    <p>{{ book.stok }}</p>
+    <p>{{ book.kategori_id }}</p>
+    <p>{{ book.cover_url }}</p>
 
     <button @click="$emit('borrow', book.id)">Pinjam</button>
   </div>
@@ -21,10 +21,32 @@ export default {
 
 <style>
 .card {
-  width: 150px;
-  padding: 10px;
+  border-radius: 18px;
+  overflow: hidden;
+  transition: 0.3s;
+  cursor: pointer;
+  color: #690303;
+  border: 1px solid #e2e8f0;
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+}
+
+.card img {
+  width: 100%;
+  height: 300px;
   border-radius: 10px;
-  background: white;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.card h4 {
+  font-size: 15px;
+  margin: 8px 0 4px;
+}
+
+.card p {
+  font-size: 12px;
+  color: #000000;
 }
 </style>
