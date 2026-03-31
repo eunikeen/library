@@ -18,21 +18,21 @@ def generate_token(user):
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.headers.get("Authorization")
+        auth_header = request.headers.get("Authorization")
 
-        if not token:
+        if not auth_header:
             return jsonify({"message": "Token missing"}), 401
 
         try:
+            token = auth_header.split(" ")[1]  # 🔥 ambil Bearer
             data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             request.user = data
-        except:
+        except Exception as e:
+            print("TOKEN ERROR:", e)
             return jsonify({"message": "Invalid token"}), 401
 
         return f(*args, **kwargs)
-
     return decorated
-
 
 def admin_only(f):
     @wraps(f)

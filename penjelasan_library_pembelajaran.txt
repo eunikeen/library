@@ -1,0 +1,1072 @@
+PENJELASAN DETAIL PROYEK LIBRARY
+Versi pembelajaran untuk orang awam di bidang IT
+
+====================================================================
+1. APA ITU PROYEK INI?
+====================================================================
+
+Proyek ini adalah sistem perpustakaan digital sederhana berbasis web.
+Artinya, aplikasi ini dijalankan melalui browser dan memungkinkan pengguna
+untuk:
+
+- mendaftar akun
+- login ke sistem
+- melihat daftar buku
+- meminjam buku
+- mengembalikan buku
+- melihat buku yang sedang dipinjam
+
+Selain pengguna biasa, ada juga admin. Admin memiliki hak akses yang lebih
+tinggi, yaitu bisa:
+
+- menambah data buku
+- mengubah data buku
+- menghapus data buku
+- melihat daftar buku dari sisi pengelolaan
+
+Secara sederhana, proyek ini meniru cara kerja perpustakaan, tetapi dalam
+bentuk aplikasi web.
+
+
+====================================================================
+2. KONSEP DASAR YANG PERLU DIPAHAMI
+====================================================================
+
+Sebelum masuk ke file-file program, ada beberapa konsep dasar yang penting
+dipahami.
+
+2.1 Frontend
+
+Frontend adalah bagian yang dilihat langsung oleh pengguna.
+Contohnya:
+
+- halaman login
+- tombol register
+- daftar buku
+- form tambah buku
+- tampilan buku saya
+
+Frontend proyek ini dibuat dengan Vue.js.
+
+Vue.js adalah framework JavaScript untuk membangun tampilan web yang dinamis.
+Dengan Vue, halaman bisa berubah sesuai data tanpa harus reload terus.
+
+
+2.2 Backend
+
+Backend adalah bagian "mesin" di belakang layar.
+Backend bertugas:
+
+- menerima permintaan dari frontend
+- memproses logika program
+- mengambil data dari database
+- menyimpan data ke database
+- mengembalikan hasil ke frontend
+
+Backend proyek ini dibuat dengan Flask, yaitu framework Python untuk membuat
+web API.
+
+
+2.3 Database
+
+Database adalah tempat penyimpanan data.
+Di proyek ini, data yang disimpan antara lain:
+
+- data user
+- data buku
+- data peminjaman
+
+Database yang dipakai adalah MySQL.
+
+
+2.4 API
+
+API adalah jembatan komunikasi antara frontend dan backend.
+
+Misalnya:
+- frontend ingin mengambil daftar buku
+- frontend mengirim request ke API "/books"
+- backend menerima request itu
+- backend mengambil data buku dari database
+- backend mengirim balik data buku ke frontend
+
+Jadi API bisa dianggap sebagai "jalur permintaan dan jawaban" antara tampilan
+dan mesin sistem.
+
+
+2.5 JSON
+
+JSON adalah format data teks yang umum dipakai saat frontend dan backend
+saling berkomunikasi.
+
+Contoh:
+
+{
+  "username": "andi",
+  "password": "12345"
+}
+
+JSON mudah dibaca manusia dan mudah diproses program.
+
+
+2.6 Token
+
+Token adalah tanda bukti bahwa seseorang sudah login.
+
+Setelah user berhasil login, backend memberikan token.
+Frontend menyimpan token itu di localStorage browser.
+Setiap kali user melakukan aksi penting, misalnya meminjam buku, frontend
+mengirim token itu ke backend.
+
+Dengan token, backend bisa tahu:
+
+- siapa user yang sedang login
+- apakah dia admin atau user biasa
+
+
+2.7 Role
+
+Role artinya peran pengguna.
+Dalam proyek ini ada 2 role:
+
+- admin
+- user
+
+Admin memiliki hak akses lebih tinggi dibanding user biasa.
+
+
+====================================================================
+3. STRUKTUR PROYEK
+====================================================================
+
+Di folder proyek ada 3 bagian utama:
+
+1. backend
+2. frontend
+3. library_db.sql
+
+Penjelasannya:
+
+- folder backend berisi kode Python Flask
+- folder frontend berisi kode Vue
+- file library_db.sql berisi struktur database MySQL
+
+
+====================================================================
+4. PENJELASAN BACKEND
+====================================================================
+
+Backend berada di folder backend.
+File pentingnya:
+
+- app.py
+- db.py
+- models.py
+- auth.py
+
+
+--------------------------------------------------------------------
+4.1 File app.py
+--------------------------------------------------------------------
+
+File ini adalah pusat utama backend.
+Saat backend dijalankan, file inilah yang aktif.
+
+Tugas app.py:
+
+- membuat aplikasi Flask
+- mengaktifkan CORS
+- mendefinisikan endpoint API
+- menghubungkan endpoint dengan fungsi logika
+
+
+Penjelasan bagian penting:
+
+from flask import Flask, request, jsonify
+
+Artinya:
+- Flask dipakai untuk membuat aplikasi web
+- request dipakai untuk menerima data dari frontend
+- jsonify dipakai untuk mengembalikan data ke format JSON
+
+
+from flask_cors import CORS
+
+Artinya backend mengizinkan frontend yang berjalan di alamat lain
+untuk mengakses API.
+
+Tanpa CORS, browser biasanya memblokir komunikasi antarport berbeda.
+
+
+app = Flask(__name__)
+CORS(app)
+
+Artinya:
+- membuat aplikasi Flask
+- mengaktifkan CORS untuk aplikasi itu
+
+
+Endpoint register:
+
+@app.route("/register", methods=["POST"])
+
+Artinya:
+- jika ada request POST ke /register
+- maka fungsi register() akan dijalankan
+
+Fungsi ini menerima data user baru, lalu memanggil create_user().
+
+
+Endpoint login:
+
+@app.route("/login", methods=["POST"])
+
+Fungsi ini:
+- menerima username dan password
+- mencari user di database
+- membandingkan password input dengan password hash di database
+- jika cocok, membuat token
+- mengirim token dan role ke frontend
+
+
+Endpoint books:
+
+@app.route("/books", methods=["GET"])
+
+Fungsi ini mengembalikan daftar semua buku.
+
+
+Endpoint my-borrowings:
+
+@app.route("/my-borrowings", methods=["GET"])
+
+Fungsi ini hanya bisa dipakai user yang sudah login karena memakai
+@token_required.
+
+Artinya backend hanya mengizinkan akses jika token valid.
+
+
+Endpoint admin:
+
+POST /books
+PUT /books/<id>
+DELETE /books/<id>
+
+Semua endpoint ini memakai:
+
+- @token_required
+- @admin_only
+
+Artinya:
+- user harus login dulu
+- dan role-nya harus admin
+
+
+Endpoint borrow dan return:
+
+POST /borrow/<book_id>
+POST /return/<book_id>
+
+Fungsi ini dipakai saat user meminjam dan mengembalikan buku.
+
+
+Kesimpulan file app.py:
+
+File ini berfungsi seperti "petugas resepsionis" yang menerima semua
+permintaan dari frontend lalu mengarahkan ke logika yang sesuai.
+
+
+--------------------------------------------------------------------
+4.2 File db.py
+--------------------------------------------------------------------
+
+File ini dipakai untuk koneksi ke database MySQL.
+
+Isinya:
+
+def get_db():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="",
+        database="library_db"
+    )
+
+Artinya:
+- backend terhubung ke MySQL lokal
+- memakai user root
+- tanpa password
+- memakai database library_db
+
+Setiap kali backend perlu mengambil atau menyimpan data, ia akan memanggil
+fungsi get_db() untuk membuka koneksi database.
+
+
+--------------------------------------------------------------------
+4.3 File models.py
+--------------------------------------------------------------------
+
+Walaupun namanya models, isi file ini sebenarnya lebih mirip kumpulan fungsi
+operasi database.
+
+File ini menangani:
+
+- data buku
+- data user
+- data peminjaman
+
+
+Bagian buku:
+
+1. get_all_books()
+   Mengambil semua data buku dari tabel books.
+
+2. add_book(data)
+   Menambah buku baru ke tabel books.
+
+3. update_book(book_id, data)
+   Mengubah data buku berdasarkan id.
+
+4. delete_book(book_id)
+   Menghapus buku berdasarkan id.
+
+
+Bagian user:
+
+1. create_user(data)
+   Membuat user baru.
+   Di sini password tidak langsung disimpan, tetapi di-hash dengan bcrypt.
+
+2. get_user_by_username(username)
+   Mencari user berdasarkan username.
+
+3. get_user_borrowings(user_id)
+   Mengambil daftar buku yang dipinjam oleh user tertentu.
+
+
+Bagian borrowing:
+
+1. borrow_book(user_id, book_id)
+   Proses meminjam buku.
+
+   Langkahnya:
+   - cek stok buku
+   - jika stok habis, gagal
+   - jika stok tersedia, buat transaksi peminjaman
+   - kurangi stok buku
+
+2. return_book(user_id, book_id)
+   Proses mengembalikan buku.
+
+   Langkahnya:
+   - cari transaksi peminjaman yang masih aktif
+   - jika tidak ada, gagal
+   - jika ada, ubah status jadi kembali
+   - isi tanggal pengembalian
+   - tambah stok buku
+
+3. get_borrowings()
+   Mengambil semua transaksi peminjaman.
+   Biasanya dipakai admin.
+
+
+Kesimpulan file models.py:
+
+File ini berfungsi seperti "bagian administrasi data", yaitu tempat semua
+proses baca dan tulis ke database dilakukan.
+
+
+--------------------------------------------------------------------
+4.4 File auth.py
+--------------------------------------------------------------------
+
+File ini menangani autentikasi dan otorisasi.
+
+Autentikasi berarti:
+"siapa kamu?"
+
+Otorisasi berarti:
+"apa yang boleh kamu lakukan?"
+
+
+Bagian penting:
+
+1. generate_token(user)
+
+Fungsi ini membuat JWT token berisi:
+- id user
+- username
+- role user
+- waktu kedaluwarsa token
+
+Jadi token adalah identitas digital sementara untuk user yang sudah login.
+
+
+2. token_required
+
+Ini adalah decorator.
+Decorator bisa dianggap sebagai "lapisan pemeriksa" sebelum fungsi utama
+dijalankan.
+
+token_required memeriksa:
+- apakah ada Authorization header
+- apakah token valid
+- apakah token belum expired
+
+Jika valid, data user akan disimpan di request.user.
+
+Jadi fungsi-fungsi lain bisa tahu siapa user yang sedang login.
+
+
+3. admin_only
+
+Decorator ini memeriksa apakah role user adalah admin.
+
+Kalau bukan admin, akses ditolak.
+
+
+Kesimpulan file auth.py:
+
+File ini berfungsi sebagai "satpam digital" yang memeriksa izin akses user.
+
+
+====================================================================
+5. PENJELASAN DATABASE
+====================================================================
+
+Database ada di file library_db.sql.
+
+File ini dipakai untuk:
+- membuat database
+- membuat tabel
+- mengisi data awal
+
+
+--------------------------------------------------------------------
+5.1 Tabel users
+--------------------------------------------------------------------
+
+Tabel ini menyimpan:
+- id
+- username
+- password
+- role
+- created_at
+
+Tujuannya:
+menyimpan akun login pengguna.
+
+Kolom role penting karena membedakan admin dan user biasa.
+
+
+--------------------------------------------------------------------
+5.2 Tabel books
+--------------------------------------------------------------------
+
+Tabel ini menyimpan informasi buku:
+- judul
+- penulis
+- penerbit
+- tahun terbit
+- deskripsi
+- stok
+- kategori
+- cover
+
+Tujuannya:
+menjadi katalog buku perpustakaan.
+
+
+--------------------------------------------------------------------
+5.3 Tabel borrowings
+--------------------------------------------------------------------
+
+Tabel ini menyimpan transaksi peminjaman.
+
+Kolom penting:
+- user_id
+- book_id
+- tanggal_pinjam
+- tanggal_kembali
+- status
+
+Tujuannya:
+mencatat siapa meminjam buku apa, kapan dipinjam, dan apakah sudah kembali.
+
+
+--------------------------------------------------------------------
+5.4 Relasi sederhana
+--------------------------------------------------------------------
+
+Hubungan antar tabel:
+
+- satu user bisa punya banyak transaksi peminjaman
+- satu buku bisa muncul di banyak transaksi peminjaman
+
+Karena itu tabel borrowings menjadi penghubung antara users dan books.
+
+
+====================================================================
+6. PENJELASAN FRONTEND
+====================================================================
+
+Frontend ada di folder frontend.
+Frontend dibuat dengan Vue.
+
+File penting:
+
+- src/main.js
+- src/App.vue
+- src/router/index.js
+- src/services/api.js
+- src/views/Login.vue
+- src/views/Register.vue
+- src/views/Home.vue
+- src/views/Admin.vue
+- src/views/User.vue
+- src/components/BookCard.vue
+
+
+--------------------------------------------------------------------
+6.1 File main.js
+--------------------------------------------------------------------
+
+Ini adalah titik awal frontend.
+
+Tugasnya:
+- mengimpor CSS global
+- membuat aplikasi Vue
+- memasang router
+- menampilkan aplikasi ke browser
+
+Kode:
+
+const app = createApp(App)
+app.use(router)
+app.mount('#app')
+
+Maksudnya:
+- buat aplikasi dari App.vue
+- aktifkan sistem routing
+- tempelkan aplikasi ke elemen HTML bernama #app
+
+
+--------------------------------------------------------------------
+6.2 File App.vue
+--------------------------------------------------------------------
+
+File ini sangat sederhana.
+
+Isi utamanya:
+
+<router-view />
+
+Artinya:
+halaman yang tampil akan ditentukan oleh router.
+
+Jika URL /login, yang tampil Login.vue
+Jika URL /admin, yang tampil Admin.vue
+Jika URL /user, yang tampil User.vue
+
+
+--------------------------------------------------------------------
+6.3 File router/index.js
+--------------------------------------------------------------------
+
+File ini mengatur jalur halaman.
+
+Daftar route:
+- /          -> Home
+- /login     -> Login
+- /register  -> Register
+- /admin     -> Admin
+- /user      -> User
+
+Jadi router adalah peta navigasi aplikasi.
+
+
+--------------------------------------------------------------------
+6.4 File services/api.js
+--------------------------------------------------------------------
+
+File ini adalah pusat komunikasi frontend ke backend.
+
+Di sini dibuat axios instance:
+
+const API = axios.create({
+  baseURL: "http://localhost:5000"
+})
+
+Artinya:
+semua request API akan diarahkan ke backend Flask di port 5000.
+
+
+Interceptor:
+
+API.interceptors.request.use(config => {
+  const token = localStorage.getItem("token")
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+
+  return config
+})
+
+Maksudnya:
+kalau user sudah login dan token ada di localStorage, token akan otomatis
+dikirim di setiap request.
+
+Ini penting agar backend tahu siapa user yang sedang login.
+
+
+Fungsi API yang tersedia:
+
+- login(data)
+- register(data)
+- getBooks()
+- borrowBook(id)
+- returnBook(id)
+- addBook(data)
+- updateBook(id, data)
+- deleteBook(id)
+- getMyBorrowings()
+
+Jadi file ini berfungsi seperti "daftar pintu masuk" ke backend.
+
+
+--------------------------------------------------------------------
+6.5 File Login.vue
+--------------------------------------------------------------------
+
+Halaman ini dipakai untuk login.
+
+Alurnya:
+
+1. User isi username dan password
+2. Klik tombol login
+3. Fungsi submit() dipanggil
+4. submit() memanggil API login(this.form)
+5. Jika berhasil:
+   - token disimpan ke localStorage
+   - role disimpan ke localStorage
+   - jika admin masuk ke /admin
+   - jika user biasa masuk ke /
+
+Jadi localStorage dipakai untuk menyimpan data sesi login di browser.
+
+
+--------------------------------------------------------------------
+6.6 File Register.vue
+--------------------------------------------------------------------
+
+Halaman ini dipakai untuk membuat akun.
+
+Alurnya:
+
+1. User isi username dan password
+2. Klik register
+3. Frontend mengirim data ke endpoint /register
+4. Jika berhasil, tampil pesan sukses
+5. User diarahkan ke halaman login
+
+
+--------------------------------------------------------------------
+6.7 File Home.vue
+--------------------------------------------------------------------
+
+Ini adalah halaman utama user.
+
+Fitur di halaman ini:
+
+- melihat daftar buku
+- mencari buku
+- filter kategori
+- membuka detail buku dalam modal
+- meminjam buku
+- mengembalikan buku
+- menuju halaman admin jika role admin
+- menuju halaman "Buku Saya" jika role user
+
+
+Data penting di Home.vue:
+
+- books
+  menyimpan semua data buku
+
+- selected
+  menyimpan buku yang sedang dipilih untuk ditampilkan di modal
+
+- search
+  teks pencarian
+
+- activeCategory
+  kategori yang sedang dipilih
+
+- userRole
+  role pengguna dari localStorage
+
+
+Computed filteredBooks:
+
+Bagian ini menyaring daftar buku berdasarkan:
+- kategori
+- kata kunci pencarian
+
+Artinya tampilan buku yang muncul akan otomatis berubah sesuai input user.
+
+
+Method load():
+
+Fungsinya memanggil getBooks() dari backend lalu menyimpan hasilnya ke books.
+
+Jadi ketika halaman dibuka, semua buku langsung ditampilkan.
+
+
+Method borrow(id):
+
+Langkahnya:
+- cek token
+- kalau belum login, arahkan ke login
+- cek role
+- kalau admin, tidak boleh meminjam
+- kalau user biasa, panggil borrowBook(id)
+- setelah berhasil, muat ulang daftar buku
+
+
+Method returnBook(id):
+
+Fungsinya:
+- memastikan user login
+- memanggil API return
+- menampilkan pesan sukses
+- memuat ulang daftar buku
+
+
+Method goAdmin():
+
+Fungsinya memastikan:
+- user sudah login
+- role harus admin
+
+Kalau dua syarat ini terpenuhi, baru diarahkan ke halaman admin.
+
+
+Kesimpulan Home.vue:
+
+Ini adalah pusat interaksi utama user biasa dengan sistem perpustakaan.
+
+
+--------------------------------------------------------------------
+6.8 File Admin.vue
+--------------------------------------------------------------------
+
+Halaman ini hanya untuk admin.
+
+Fitur:
+- menambah buku
+- mengedit buku
+- menghapus buku
+- melihat semua buku dalam bentuk tabel
+
+
+Data penting:
+
+- books
+  daftar buku
+
+- form
+  data buku yang sedang diisi
+
+- editId
+  penanda apakah admin sedang mengedit buku lama atau membuat buku baru
+
+
+Method load():
+Mengambil semua buku dari backend.
+
+
+Method save():
+
+Jika editId ada:
+- berarti update buku
+
+Jika editId kosong:
+- berarti tambah buku baru
+
+
+Method edit(b):
+Mengisi form dengan data buku yang dipilih.
+
+
+Method hapus(id):
+Menampilkan konfirmasi lalu menghapus buku.
+
+
+Mounted():
+
+Saat halaman dibuka, program mengecek role.
+Kalau role bukan admin, akses ditolak.
+
+Ini penting karena halaman admin tidak boleh diakses user biasa.
+
+
+--------------------------------------------------------------------
+6.9 File User.vue
+--------------------------------------------------------------------
+
+Halaman ini menampilkan buku yang sedang dipinjam user.
+
+Fungsinya:
+- mengambil daftar pinjaman milik user login
+- menampilkan status pinjaman
+- menyediakan tombol kembali
+
+
+Method load():
+Mengambil data dari endpoint /my-borrowings.
+
+
+Method kembali(bookId):
+Mengirim request pengembalian buku ke backend lalu memuat ulang daftar.
+
+
+Mounted():
+Mengecek apakah token ada.
+Kalau tidak ada, user dipaksa login dulu.
+
+
+Kesimpulan User.vue:
+
+Halaman ini menunjukkan bahwa sistem sudah mengenali data sesuai user yang
+login, bukan sekadar menampilkan semua data secara campur.
+
+
+--------------------------------------------------------------------
+6.10 File BookCard.vue
+--------------------------------------------------------------------
+
+Komponen ini hanya untuk menampilkan 1 buku dalam bentuk kartu.
+
+Isinya:
+- gambar cover
+- judul buku
+- penulis buku
+
+Komponen dibuat agar tampilan buku bisa dipakai berulang tanpa menulis kode
+yang sama terus-menerus.
+
+
+====================================================================
+7. ALUR PROGRAM DARI AWAL SAMPAI AKHIR
+====================================================================
+
+Berikut alur umum sistem.
+
+
+--------------------------------------------------------------------
+7.1 Alur register
+--------------------------------------------------------------------
+
+1. User membuka halaman register
+2. User mengisi username dan password
+3. Frontend mengirim data ke /register
+4. Backend menerima data
+5. Backend memanggil create_user()
+6. Password di-hash dengan bcrypt
+7. Data user disimpan ke tabel users
+8. Backend mengirim respon berhasil
+9. Frontend menampilkan pesan sukses lalu pindah ke login
+
+
+--------------------------------------------------------------------
+7.2 Alur login
+--------------------------------------------------------------------
+
+1. User membuka halaman login
+2. User memasukkan username dan password
+3. Frontend mengirim request ke /login
+4. Backend mencari username di database
+5. Backend membandingkan password input dengan password hash
+6. Jika cocok, backend membuat JWT token
+7. Backend mengirim token dan role
+8. Frontend menyimpan token dan role ke localStorage
+9. User diarahkan ke halaman sesuai role
+
+
+--------------------------------------------------------------------
+7.3 Alur melihat daftar buku
+--------------------------------------------------------------------
+
+1. User membuka halaman home
+2. Vue memanggil fungsi load()
+3. load() memanggil API getBooks()
+4. Frontend mengirim GET /books
+5. Backend mengambil semua buku dari tabel books
+6. Backend mengirim JSON daftar buku
+7. Frontend menampilkan buku dalam grid
+
+
+--------------------------------------------------------------------
+7.4 Alur meminjam buku
+--------------------------------------------------------------------
+
+1. User klik tombol pinjam
+2. Frontend cek apakah token ada
+3. Jika belum login, user diarahkan ke login
+4. Jika role admin, peminjaman ditolak
+5. Jika user biasa, frontend kirim POST /borrow/<id>
+6. Backend membaca token dan mengetahui user_id
+7. Backend mengecek stok buku
+8. Jika stok ada, transaksi dicatat ke tabel borrowings
+9. Stok buku dikurangi 1
+10. Backend mengirim respon sukses
+11. Frontend memuat ulang daftar buku
+
+
+--------------------------------------------------------------------
+7.5 Alur mengembalikan buku
+--------------------------------------------------------------------
+
+1. User klik tombol kembali
+2. Frontend mengirim POST /return/<id>
+3. Backend mencari transaksi yang masih status dipinjam
+4. Jika ditemukan, status diubah jadi kembali
+5. Tanggal pengembalian diisi
+6. Stok buku ditambah 1
+7. Backend mengirim respon sukses
+8. Frontend memuat ulang data
+
+
+--------------------------------------------------------------------
+7.6 Alur admin menambah buku
+--------------------------------------------------------------------
+
+1. Admin login
+2. Masuk ke halaman admin
+3. Mengisi form buku
+4. Frontend mengirim POST /books
+5. Backend memeriksa token dan role admin
+6. Jika valid, backend menambahkan buku ke database
+7. Frontend memuat ulang daftar buku
+
+
+====================================================================
+8. ISTILAH PENTING DALAM PROYEK INI
+====================================================================
+
+Frontend
+Bagian tampilan yang dilihat user.
+
+Backend
+Bagian logika utama di belakang layar.
+
+Database
+Tempat menyimpan data.
+
+API
+Jalur komunikasi antara frontend dan backend.
+
+JSON
+Format data teks yang mudah dibaca.
+
+CRUD
+Create, Read, Update, Delete.
+Dalam proyek ini, admin melakukan CRUD terhadap buku.
+
+JWT
+Token yang menyimpan identitas user secara aman.
+
+Bcrypt
+Metode untuk mengamankan password dengan hashing.
+
+Role
+Peran user, misalnya admin atau user.
+
+Authorization Header
+Bagian request HTTP yang membawa token.
+
+LocalStorage
+Penyimpanan sederhana di browser untuk data seperti token dan role.
+
+
+====================================================================
+9. KELEBIHAN SISTEM INI
+====================================================================
+
+- Sudah memisahkan frontend, backend, dan database
+- Sudah memakai sistem login
+- Sudah membedakan admin dan user biasa
+- Sudah ada proses pinjam dan kembali
+- Sudah ada pengurangan dan penambahan stok otomatis
+- Sudah memakai token untuk keamanan sesi login
+- Sudah memakai hash password
+
+
+====================================================================
+10. HAL YANG MASIH BISA DIKEMBANGKAN
+====================================================================
+
+Walaupun sistem ini sudah cukup baik untuk pembelajaran, masih banyak hal
+yang bisa disempurnakan.
+
+Contoh pengembangan:
+
+- validasi form yang lebih ketat
+- tampilan error yang lebih rapi
+- proteksi route frontend sebelum halaman terbuka
+- dashboard admin lebih lengkap
+- pencarian berdasarkan penulis dan penerbit
+- pagination jika data buku sangat banyak
+- upload gambar cover, bukan hanya URL
+- riwayat peminjaman lengkap
+- logout otomatis jika token expired
+- refresh token
+
+
+====================================================================
+11. CATATAN PENTING UNTUK PEMBELAJARAN
+====================================================================
+
+Ada beberapa hal teknis pada proyek ini yang penting diketahui:
+
+1. Login memakai token JWT, jadi backend tidak menyimpan sesi login biasa.
+2. Password user baru di-hash, tetapi data awal di file SQL masih berupa teks
+   biasa. Untuk penggunaan nyata, semua password sebaiknya di-hash.
+3. Kategori buku di SQL terlihat tidak sepenuhnya konsisten dengan isi data
+   awal. Ini perlu dirapikan jika sistem ingin dipakai lebih serius.
+4. Sistem ini sangat cocok untuk belajar konsep full stack dasar:
+   frontend + backend + database + autentikasi.
+
+
+====================================================================
+12. RANGKUMAN AKHIR
+====================================================================
+
+Proyek library ini adalah aplikasi perpustakaan berbasis web yang dibuat untuk
+menunjukkan bagaimana sebuah sistem full stack bekerja.
+
+Pembagian perannya:
+
+- Vue menangani tampilan dan interaksi user
+- Flask menangani logika program dan API
+- MySQL menyimpan data
+- JWT mengamankan akses user
+
+Alur sederhananya:
+
+user membuka frontend -> frontend memanggil backend -> backend mengakses
+database -> hasil dikirim kembali ke frontend -> frontend menampilkan hasil
+ke user
+
+Jika dipahami dengan baik, proyek ini sudah cukup untuk menjadi dasar belajar:
+
+- bagaimana halaman web modern bekerja
+- bagaimana login dijalankan
+- bagaimana data disimpan
+- bagaimana frontend dan backend saling terhubung
+- bagaimana role admin dan user dibedakan
+
+====================================================================
+SELESAI
+====================================================================

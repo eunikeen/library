@@ -1,7 +1,6 @@
 <template>
   <div class="container">
 
-    <!-- HEADER -->
     <div class="header">
       <h2 class="logo">Perpustakaan</h2>
 
@@ -10,15 +9,16 @@
       <div class="actions">
         <button @click="$router.push('/login')">Login</button>
         <button @click="$router.push('/register')">Register</button>
-        <button class="admin" @click="goAdmin">Admin</button>
-      </div>
+        <button @click="goAdmin">Admin</button>
+
+        <button v-if="userRole === 'user'" @click="$router.push('/user')">Buku Saya</button>
+    </div>
     </div>
 
     <div class="hero">
       <h3>Temukan Buku Yang Anda Cari</h3>
     </div>
 
-    <!-- CATEGORY -->
     <div class="categories">
       <span 
         :class="{ active: activeCategory === null }"
@@ -37,39 +37,33 @@
       </span>
     </div>
 
-    <!-- BOOK GRID -->
     <div class="grid">
-      <div 
+      <BookCard
         v-for="b in filteredBooks"
         :key="b.id"
-        class="card"
-        @click="selected = b"
-      >
-        <img :src="b.cover_url" />
-        <h4>{{ b.judul }}</h4>
-        <p>{{ b.penulis }}</p>
-      </div>
+        :book="b"
+        @borrow="borrow"
+        @return="returnBook"
+        @click.native="selected = b"
+      />
     </div>
 
-    <!-- DETAIL MODAL -->
-<div v-if="selected" class="modal">
-  <div class="modal-box">
+    <div v-if="selected" class="modal">
+      <div class="modal-box">
 
-    <!-- IMAGE -->
-    <div class="left">
-      <img :src="selected.cover_url" />
+        <div class="left">
+          <img :src="selected.cover_url" />
     </div>
 
-    <!-- INFO -->
-    <div class="right">
-      <h2>{{ selected.judul }}</h2>
+        <div class="right">
+          <h2>{{ selected.judul }}</h2>
 
-      <p class="author">
-        {{ selected.penulis }} ({{ selected.tahun_terbit }})
-      </p>
+          <p class="author">
+            {{ selected.pengarang }} ({{ selected.tahun_terbit }})
+          </p>
 
-      <p class="desc">
-        {{ selected.deskripsi }}
+          <p class="desc">
+            {{ selected.deskripsi }}
       </p>
 
       <div class="meta">
@@ -77,10 +71,16 @@
         <span>🏷️ {{ selected.kategori_id }}</span>
       </div>
 
-      <!-- BUTTON -->
       <div class="actions">
         <button class="btn primary" @click="borrow(selected.id)">
           Pinjam
+        </button>
+
+        <button 
+          v-if="isUser" 
+          class="btn primary" 
+          @click="returnBook(selected.id)">
+          Kembalikan
         </button>
 
         <button class="btn secondary" @click="selected = null">
@@ -96,17 +96,23 @@
 </template>
 
 <script>
-import { getBooks, borrowBook } from "../services/api";
+import { getBooks, borrowBook, returnBook as apiReturnBook } from "../services/api"
 import BookCard from "../components/BookCard.vue";
+
 export default {
-  components: { BookCard },
+    components: {
+    BookCard
+  },
+  
   data() {
     return {
       books: [],
       selected: null,
       search: "",
       activeCategory: null,
-      categories: ["Teknologi", "Sains", "Novel", "Kesehatan", "Ekonomi"]
+      categories: ["Teknologi", "Sains", "Hukum", "Kesehatan", "Ekonomi"],
+
+      userRole: null 
     };
   },
 
@@ -118,17 +124,68 @@ export default {
           b.judul.toLowerCase().includes(this.search.toLowerCase())
         );
       });
+    },
+
+    isLogin() {
+      return !!localStorage.getItem("token");
     }
   },
 
   methods: {
     async load() {
-      const res = await getBooks();
-      this.books = res.data;
+      try {
+        const res = await getBooks()
+        console.log("DATA BUKU:", res.data)
+        this.books = res.data
+      } catch (err) {
+        console.error(err)
+      }
     },
 
     async borrow(id) {
       const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+
+      if (!token) {
+        alert("Silakan login dulu!");
+        this.$router.push("/login");
+        return;
+      }
+
+      if (role === "admin") {
+        alert("Admin tidak bisa meminjam!");
+        return;
+      }
+
+      await borrowBook(id);
+      alert("Berhasil pinjam");
+      this.load();
+    },
+
+    async returnBook(id) {
+      const token = localStorage.getItem("token")
+
+      if (!token) {
+        alert("Login dulu!")
+        return
+      }
+
+      await apiReturnBook(id)
+      alert("Berhasil kembali")
+      this.load()
+    },
+
+    logout() {
+      localStorage.removeItem("token")
+      localStorage.removeItem("role")
+
+      this.userRole = null
+      this.$router.push("/login")
+    },
+
+    goAdmin() {
+      const token = localStorage.getItem("token")
+      const role = localStorage.getItem("role");
 
       if (!token) {
         alert("Login dulu!");
@@ -136,16 +193,8 @@ export default {
         return;
       }
 
-      await borrowBook(id);
-      alert("Berhasil pinjam");
-    },
-
-    goAdmin() {
-      const role = localStorage.getItem("role");
-
       if (role !== "admin") {
-        alert("Harus login admin!");
-        this.$router.push("/login");
+        alert("Login sebagai admin dulu!");
         return;
       }
 
@@ -154,7 +203,14 @@ export default {
   },
 
   mounted() {
+    this.userRole = localStorage.getItem("role")
     this.load();
+  },
+
+  watch: {
+    $route() {
+      this.userRole = localStorage.getItem("role")
+    }
   }
 };
 </script>
@@ -167,7 +223,6 @@ export default {
   background: #ffffff;
 }
 
-/* HEADER */
 .header {
   display: flex;
   justify-content: space-between;
@@ -212,7 +267,6 @@ export default {
   padding-top: 5px;
 }
 
-/* CATEGORY */
 .categories {
   margin: 3px 0;
   display: flex;
@@ -230,7 +284,6 @@ export default {
   cursor: pointer;
 }
 
-/* GRID */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
@@ -238,7 +291,6 @@ export default {
   padding: 40px;
 }
 
-/* MODAL */
 .modal {
   position: fixed;
   inset: 0;
@@ -251,7 +303,6 @@ export default {
   backdrop-filter: blur(4px); 
 }
 
-/* BOX */
 .modal-box {
   display: flex;
   gap: 30px;
@@ -265,7 +316,6 @@ export default {
   box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 }
 
-/* LEFT */
 .left img {
   width: 200px;
   height: 300px;
@@ -273,7 +323,6 @@ export default {
   border-radius: 12px;
 }
 
-/* RIGHT */
 .right {
   flex: 1;
   display: flex;
@@ -305,7 +354,6 @@ export default {
   line-height: 1.5;
 }
 
-/* META */
 .meta {
   display: flex;
   gap: 15px;
@@ -314,7 +362,6 @@ export default {
   color: #ffffff;
 }
 
-/* BUTTONS */
 .actions {
   display: flex;
   gap: 10px;
@@ -329,7 +376,6 @@ export default {
   font-size: 13px;
 }
 
-/* PRIMARY */
 .btn.primary {
   background: #ffffff;
   color: #690303;
@@ -340,7 +386,6 @@ export default {
   color: #ffffff; 
 }
 
-/* SECONDARY */
 .btn.secondary {
   background: #ffffff;
   color: #690303;

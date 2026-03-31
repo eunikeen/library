@@ -1,15 +1,8 @@
 <template>
   <div class="card">
+    <img :src="book.cover_url" />
     <h4>{{ book.judul }}</h4>
-    <p>{{ book.penulis }}</p>
-    <p>{{ book.penerbit }}</p>
-    <p>{{ book.tahun_terbit }}</p>
-    <p>{{ book.deskripsi }}</p>
-    <p>{{ book.stok }}</p>
-    <p>{{ book.kategori_id }}</p>
-    <p>{{ book.cover_url }}</p>
-
-    <button @click="$emit('borrow', book.id)">Pinjam</button>
+    <p>{{ book.pengarang }}</p>
   </div>
 </template>
 

@@ -15,15 +15,15 @@ INSERT INTO users (username, password, role) VALUES
 CREATE TABLE IF NOT EXISTS books (
     id INT(11) AUTO_INCREMENT PRIMARY KEY,
     judul VARCHAR(200) NOT NULL,
-    penulis VARCHAR(200) DEFAULT NULL,
+    pengarang VARCHAR(200) DEFAULT NULL,
     penerbit VARCHAR(200) DEFAULT NULL,
     tahun_terbit INT(10) DEFAULT NULL,
     deskripsi TEXT DEFAULT NULL,
     stok INT(11) DEFAULT 5,
-    kategori_id ENUM('teknologi', 'sains', 'novel', 'kesehatan', 'ekonomi') NOT NULL,
+    kategori_id ENUM('teknologi', 'sains', 'hukum', 'kesehatan', 'ekonomi') NOT NULL,
     cover_url VARCHAR(500) NOT NULL
 );
-INSERT INTO books (judul, penulis, penerbit, tahun_terbit, deskripsi, stok, kategori_id, cover_url) VALUES
+INSERT INTO books (judul, pengarang, penerbit, tahun_terbit, deskripsi, stok, kategori_id, cover_url) VALUES
 
 -- ================== TEKNOLOGI ==================
 ('Clean Code', 'Robert C. Martin', 'Prentice Hall', 2008, 'Panduan menulis kode yang bersih dan mudah dipahami.', 8, 1, 'https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg'),

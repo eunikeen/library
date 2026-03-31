@@ -8,13 +8,18 @@ from auth import *
 app = Flask(__name__)
 CORS(app)
 
-# ========================
-# AUTH
-# ========================
+#AUTH
 @app.route("/register", methods=["POST"])
 def register():
-    create_user(request.json)
-    return jsonify({"message": "Registered"})
+    try:
+        print("REGISTER DATA:", request.json)
+
+        create_user(request.json)
+
+        return jsonify({"message": "Registered"})
+    except Exception as e:
+        print("ERROR REGISTER:", e)
+        return jsonify({"message": "Register gagal", "error": str(e)}), 500
 
 
 @app.route("/login", methods=["POST"])
@@ -25,7 +30,13 @@ def login():
     if not user:
         return jsonify({"message": "User not found"}), 404
 
-    if not bcrypt.checkpw(data["password"].encode(), user["password"].encode()):
+    stored_password = user["password"]
+    if isinstance(stored_password, str):
+        stored_password = stored_password.encode()
+
+    print(bcrypt.hashpw("admin".encode(), bcrypt.gensalt()))
+
+    if not bcrypt.checkpw(data["password"].encode(), stored_password):
         return jsonify({"message": "Wrong password"}), 401
 
     token = generate_token(user)
@@ -36,17 +47,18 @@ def login():
     })
 
 
-# ========================
-# BOOK (USER)
-# ========================
+#BOOK (USER)
 @app.route("/books", methods=["GET"])
 def books():
     return jsonify(get_all_books())
 
+@app.route("/my-borrowings", methods=["GET"])
+@token_required
+def my_borrowings():
+    user_id = request.user["id"]
+    return jsonify(get_user_borrowings(user_id))
 
-# ========================
-# BOOK (ADMIN)
-# ========================
+#BOOK (ADMIN)
 @app.route("/books", methods=["POST"])
 @token_required
 @admin_only
@@ -71,9 +83,7 @@ def delete(id):
     return jsonify({"message": "Deleted"})
 
 
-# ========================
-# BORROW
-# ========================
+#BORROW
 @app.route("/borrow/<int:book_id>", methods=["POST"])
 @token_required
 def borrow(book_id):
@@ -85,13 +95,20 @@ def borrow(book_id):
     return jsonify({"message": "Berhasil pinjam"})
 
 
-@app.route("/return/<int:id>", methods=["POST"])
+@app.route("/return/<int:book_id>", methods=["POST"])
 @token_required
-def return_b(id):
-    return_book(id)
-    return jsonify({"message": "Dikembalikan"})
+def return_b(book_id):
+    user_id = request.user["id"]
+
+    success = return_book(user_id, book_id)
+
+    if not success:
+        return jsonify({"message": "Tidak ada pinjaman"}), 400
+
+    return jsonify({"message": "Berhasil dikembalikan"})
 
 
+#ADMIN
 @app.route("/borrowings", methods=["GET"])
 @token_required
 @admin_only
@@ -101,4 +118,3 @@ def all_borrow():
 
 if __name__ == "__main__":
     app.run(debug=True)
-

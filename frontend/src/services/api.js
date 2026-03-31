@@ -1,32 +1,28 @@
-import axios from "axios";
+import axios from "axios"
 
-const API = "http://localhost:5000";
+const API = axios.create({
+  baseURL: "http://localhost:5000"
+})
 
-const getHeaders = () => ({
-  headers: {
-    Authorization: localStorage.getItem("token")
+API.interceptors.request.use(config => {
+  const token = localStorage.getItem("token")
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
-});
 
-// AUTH
-export const login = (data) => axios.post(`${API}/login`, data);
-export const register = (data) => axios.post(`${API}/register`, data);
+  return config
+})
 
-// BOOK
-export const getBooks = () => axios.get(`${API}/books`, getHeaders());
-export const addBook = (data) => axios.post(`${API}/books`, data, getHeaders());
-export const updateBook = (id, data) => axios.put(`${API}/books/${id}`, data, getHeaders());
-export const deleteBook = (id) => axios.delete(`${API}/books/${id}`, getHeaders());
+export const login = data => API.post("/login", data)
+export const register = data => API.post("/register", data)
 
-// 🔥 BORROW (INI YANG KAMU KURANG)
-export const borrowBook = (id) =>
-  axios.post(`${API}/borrow/${id}`, {}, getHeaders());
+export const getBooks = () => API.get("/books")
 
-export const returnBook = (id) =>
-  axios.post(`${API}/return/${id}`, {}, getHeaders());
+export const borrowBook = id => API.post(`/borrow/${id}`)
+export const returnBook = id => API.post(`/return/${id}`)
 
-export const getBorrowings = () =>
-  axios.get(`${API}/borrowings`, getHeaders());
-
-export const getCategories = () =>
-  axios.get(`${API}/categories`, getHeaders());
+export const addBook = data => API.post("/books", data)
+export const updateBook = (id, data) => API.put(`/books/${id}`, data)
+export const deleteBook = id => API.delete(`/books/${id}`)
+export const getMyBorrowings = () => API.get("/my-borrowings")

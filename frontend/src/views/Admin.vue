@@ -1,20 +1,19 @@
 <template>
   <div class="admin-container">
 
-    <!-- HEADER -->
     <div class="admin-header">
-      <h2>📚 Admin Panel</h2>
+      <h2>Admin Panel</h2>
       <button @click="$router.push('/')">← Kembali</button>
+      <button @click="logout">Logout</button>
     </div>
 
     <div class="admin-content">
 
-      <!-- FORM -->
       <div class="form-box">
         <h3>{{ editId ? "Edit Buku" : "Tambah Buku" }}</h3>
 
         <input v-model="form.judul" placeholder="Judul" />
-        <input v-model="form.penulis" placeholder="Penulis" />
+        <input v-model="form.pengarang" placeholder="Pengarang" />
         <input v-model="form.penerbit" placeholder="Penerbit" />
         <input v-model="form.tahun_terbit" placeholder="Tahun Terbit" />
         <input v-model="form.deskripsi" placeholder="Deskripsi" />
@@ -24,7 +23,7 @@
           <option disabled value="">Pilih Kategori</option>
           <option>teknologi</option>
           <option>sains</option>
-          <option>novel</option>
+          <option>hukum</option>
           <option>kesehatan</option>
           <option>ekonomi</option>
         </select>
@@ -36,7 +35,6 @@
         </button>
       </div>
 
-      <!-- TABLE -->
       <div class="table-box">
         <h3>Daftar Buku</h3>
 
@@ -45,7 +43,7 @@
             <tr>
               <th>Cover</th>
               <th>Judul</th>
-              <th>Penulis</th>
+              <th>Pengarang</th>
               <th>Kategori</th>
               <th>Stok</th>
               <th>Aksi</th>
@@ -58,7 +56,7 @@
                 <img :src="b.cover_url" />
               </td>
               <td>{{ b.judul }}</td>
-              <td>{{ b.penulis }}</td>
+              <td>{{ b.pengarang }}</td>
               <td>{{ b.kategori_id }}</td>
               <td>{{ b.stok }}</td>
               <td>
@@ -86,6 +84,7 @@ export default {
       editId: null
     };
   },
+
   methods: {
     async load() {
       const res = await getBooks();
@@ -104,6 +103,13 @@ export default {
       this.load();
     },
 
+    logout() {
+      localStorage.removeItem("token")
+      localStorage.removeItem("role")
+      this.userRole = null
+      this.$router.push("/login")
+    },
+
     edit(b) {
       this.form = { ...b };
       this.editId = b.id;
@@ -111,13 +117,20 @@ export default {
 
     async hapus(id) {
       if (!confirm("Yakin hapus?")) return;
-
       await deleteBook(id);
       this.load();
     }
   },
 
   mounted() {
+    const role = localStorage.getItem("role");
+
+    if (role !== "admin") {
+      alert("Akses hanya untuk admin!");
+      this.$router.push("/");
+      return;
+    }
+
     this.load();
   }
 };
@@ -130,32 +143,33 @@ export default {
   min-height: 100vh;
 }
 
-/* HEADER */
 .admin-header {
   display: flex;
   justify-content: space-between;
   margin-bottom: 20px;
+  margin-left: 20px;
+  margin-right: 20px;
 }
 
 .admin-header h2 {
-  color: #7f1d1d;
+  color: #690303;
 }
 
 .admin-header button {
-  background: #1e293b;
+  background: #690303;
   color: white;
+  height: 40px;
+  margin-top: 15px;
   padding: 8px 12px;
   border-radius: 8px;
-  border: none;
+  border: 1px solid #690303;
 }
 
-/* LAYOUT */
 .admin-content {
   display: flex;
   gap: 20px;
 }
 
-/* FORM */
 .form-box {
   width: 300px;
   background: white;
@@ -181,7 +195,6 @@ export default {
   border-radius: 8px;
 }
 
-/* TABLE */
 .table-box {
   flex: 1;
   background: white;
@@ -207,15 +220,14 @@ td img {
   border-radius: 6px;
 }
 
-/* BUTTON */
 .edit {
-  background: #f59e0b;
+  background: #690303;
   color: white;
   margin-right: 5px;
 }
 
 .delete {
-  background: #ef4444;
+  background: #690303;
   color: white;
 }
 

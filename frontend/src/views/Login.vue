@@ -31,17 +31,28 @@ export default {
       }
     };
   },
+
   methods: {
     async submit() {
       try {
         const res = await login(this.form);
 
+        console.log("LOGIN RESPONSE:", res.data);
+
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("role", res.data.role);
 
-        this.$router.push("/");
-      } catch (err) {
-        alert("Login gagal!");
+        console.log("ROLE SET:", localStorage.getItem("role"));
+
+        if (res.data.role === "admin") {
+          this.$router.push("/admin");
+        } else {
+          this.$router.push("/");
+        }
+
+      } catch {
+        console.error(err)
+        alert("Login gagal");
       }
     }
   }
